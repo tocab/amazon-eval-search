@@ -1,5 +1,7 @@
 """Evaluation utilities for BM25 retrieval and reranking on ESCI data."""
 
+from typing import cast
+
 import polars as pl
 
 from datasets import load_dataset
@@ -19,15 +21,30 @@ ESCI_WEIGHTS = {
 
 
 def load_data(locales: list[str], split: str = "train") -> pl.DataFrame:
-    """Load one ESCI split, filter locales, and map labels to numeric gains."""
-    ds = load_dataset("tasksource/esci", split=split).to_polars()
-    ds = ds.filter(pl.col("product_locale").is_in(locales))  # type: ignore
+    """Load one ESCI split, filter locales, and map labels to numeric gains.
+
+    Args:
+        locales: Storefront locales to keep (for example: `["us", "es", "jp"]`).
+        split: ESCI split name (for example: `"train"` or `"test"`).
+
+    Returns:
+        pl.DataFrame: Filtered split with an added `esci_weight` column.
+    """
+    ds = cast(pl.DataFrame, load_dataset("tasksource/esci", split=split).to_polars())
+    ds = ds.filter(pl.col("product_locale").is_in(locales))
     ds = ds.with_columns(pl.col("esci_label").replace(ESCI_WEIGHTS).cast(pl.Float32).alias("esci_weight"))
     return ds
 
 
-def create_product_data(dataset: pl.DataFrame):
-    """Create a unique product table used to initialize BM25."""
+def create_product_data(dataset: pl.DataFrame) -> pl.DataFrame:
+    """Create a unique product table used to initialize BM25.
+
+    Args:
+        dataset: Input ESCI rows.
+
+    Returns:
+        pl.DataFrame: Deduplicated product table with product text fields.
+    """
     product_data = dataset.select(
         [
             "product_id",
@@ -44,8 +61,15 @@ def create_product_data(dataset: pl.DataFrame):
     return product_data
 
 
-def evaluate_retrieval():
-    """Evaluate full-corpus retrieval by joining BM25 results to judged pairs."""
+def evaluate_retrieval() -> pl.DataFrame:
+    """Evaluate full-corpus retrieval by joining BM25 results to judged pairs.
+
+    Args:
+        None.
+
+    Returns:
+        pl.DataFrame: Per-query NDCG table.
+    """
     ds_train = load_data(LOCALES, "train")
     ds_test = load_data(LOCALES, "test")
     product_data = create_product_data(ds_train)
@@ -65,10 +89,18 @@ def evaluate_retrieval():
     query_scores = pl.from_dicts(query_scores)
     print(query_scores.sort("ndcg_score"))
     query_scores.write_parquet("data/ndcg_scores.parquet")
+    return query_scores
 
 
-def evaluate_rerank():
-    """Evaluate reranking within each query's provided candidate set."""
+def evaluate_rerank() -> pl.DataFrame:
+    """Evaluate reranking within each query's provided candidate set.
+
+    Args:
+        None.
+
+    Returns:
+        pl.DataFrame: Per-query NDCG table.
+    """
     ds_train = load_data(LOCALES, "train")
     ds_test = load_data(LOCALES, "test")
     product_data = create_product_data(ds_train)
@@ -89,10 +121,18 @@ def evaluate_rerank():
     print(query_scores.sort("ndcg_score"))
     print("Avg ndcg score:", query_scores["ndcg_score"].mean())
     query_scores.write_parquet("data/ndcg_scores.parquet")
+    return query_scores
 
 
-def main():
-    """Run the default local evaluation entry point."""
+def main() -> None:
+    """Run the default local evaluation entry point.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     evaluate_rerank()
 
 

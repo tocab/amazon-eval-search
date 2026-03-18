@@ -1,5 +1,7 @@
 """Small local runner for trying BM25 ranking on the ESCI test split."""
 
+from typing import cast
+
 from datasets import load_dataset
 import polars as pl
 
@@ -8,11 +10,18 @@ from ranking.okapi_bm25 import OkapiBM25
 LOCALE = "us"
 
 
-def try_okapi():
-    """Run a single BM25 query and print results plus query latency."""
-    ds = load_dataset("tasksource/esci", split="test").to_polars()
+def try_okapi() -> None:
+    """Run a single BM25 query and print results plus query latency.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
+    ds = cast(pl.DataFrame, load_dataset("tasksource/esci", split="test").to_polars())
     product_data = (
-        ds.filter(pl.col("product_locale") == LOCALE)  # type: ignore
+        ds.filter(pl.col("product_locale") == LOCALE)
         .select(
             [
                 "product_id",
