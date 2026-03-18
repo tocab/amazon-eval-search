@@ -1,4 +1,5 @@
 /data
+.ipynb_checkpoints/
 **/.mypy_cache
 **/.ruff_cache
 **/.venv
