@@ -1,12 +1,15 @@
 """Evaluation utilities for BM25 retrieval and reranking on ESCI data."""
 
+from enum import Enum
 from typing import cast
 
 import polars as pl
 
 from datasets import load_dataset
 
+from ranking.base_ranker import BaseRanker
 from ranking.okapi_bm25 import OkapiBM25
+from ranking.random_ranker import RandomRanker
 from sklearn.metrics import ndcg_score
 from tqdm.auto import tqdm
 
@@ -20,6 +23,13 @@ ESCI_WEIGHTS = {
 }
 
 
+class RankerType(str, Enum):
+    """Supported reranker implementations."""
+
+    OKAPI = "okapi"
+    RANDOM = "random"
+
+
 def load_data(locales: list[str], split: str = "train") -> pl.DataFrame:
     """Load one ESCI split, filter locales, and map labels to numeric gains.
 
@@ -31,6 +41,8 @@ def load_data(locales: list[str], split: str = "train") -> pl.DataFrame:
         pl.DataFrame: Filtered split with an added `esci_weight` column.
     """
     ds = cast(pl.DataFrame, load_dataset("tasksource/esci", split=split).to_polars())
+    # Task 1: filter by small_version == 1
+    ds = ds.filter(pl.col("small_version") == 1)
     ds = ds.filter(pl.col("product_locale").is_in(locales))
     ds = ds.with_columns(pl.col("esci_label").replace(ESCI_WEIGHTS).cast(pl.Float32).alias("esci_weight"))
     return ds
@@ -92,27 +104,36 @@ def evaluate_retrieval() -> pl.DataFrame:
     return query_scores
 
 
-def evaluate_rerank() -> pl.DataFrame:
+def _create_reranker(ranker_name: RankerType, product_data: pl.DataFrame) -> BaseRanker:
+    """Create a reranker instance by name."""
+    if ranker_name == RankerType.OKAPI:
+        return OkapiBM25(product_data, "product_title", "product_id")
+    if ranker_name == RankerType.RANDOM:
+        return RandomRanker()
+    raise ValueError(f"Unknown ranker: {ranker_name}")
+
+
+def evaluate_rerank(ranker_type: RankerType = RankerType.OKAPI) -> pl.DataFrame:
     """Evaluate reranking within each query's provided candidate set.
 
     Args:
-        None.
+        ranker_type: Name of reranker to evaluate.
 
     Returns:
         pl.DataFrame: Per-query NDCG table.
     """
-    ds_train = load_data(LOCALES, "train")
     ds_test = load_data(LOCALES, "test")
-    product_data = create_product_data(ds_train)
+    ds_train = load_data(LOCALES, "train")
 
-    okapi = OkapiBM25(product_data, "product_title", "product_id")
+    product_data = create_product_data(ds_train)
+    ranker = _create_reranker(ranker_type, product_data)
 
     query_scores = []
     query_groups = ds_test.partition_by(["query_id", "query"], as_dict=True)
     for index, group in tqdm(query_groups.items(), total=len(query_groups), desc="Evaluating queries"):
         query_id = index[0]
         query = index[1]
-        result = okapi.rerank(query, group)
+        result = ranker.rerank(query, group)
         comparison = group.join(result.select("product_id", "score"), on="product_id", how="left").fill_null(0.0)
         score = ndcg_score([comparison["esci_weight"]], [comparison["score"]])
         query_scores.append({"query_id": query_id, "query": query, "ndcg_score": score})
@@ -133,7 +154,8 @@ def main() -> None:
     Returns:
         None.
     """
-    evaluate_rerank()
+    ranker_to_test = RankerType.RANDOM
+    evaluate_rerank(ranker_to_test)
 
 
 if __name__ == "__main__":

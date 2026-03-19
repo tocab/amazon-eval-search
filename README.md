@@ -29,14 +29,47 @@ uv sync
 python evaluation.py
 ```
 
-## Current Local Results
+## Results
 
-| Storefront | Queries | Mean NDCG |
-| --- | ---: | ---: |
-| us | 22458 | 0.9146 |
-| es | 3844 | 0.8798 |
-| jp | 4667 | 0.8732 |
-| **overall** | **30969** | **0.9039** |
+<table>
+  <thead>
+    <tr>
+      <th rowspan="2" align="left">Storefront</th>
+      <th rowspan="2" align="right">Queries</th>
+      <th colspan="2" align="center">Mean NDCG</th>
+    </tr>
+    <tr>
+      <th align="right">Random</th>
+      <th align="right">Okapi BM25</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>us</td>
+      <td align="right">8956</td>
+      <td align="right">0.7446</td>
+      <td align="right">0.8182</td>
+    </tr>
+    <tr>
+      <td>es</td>
+      <td align="right">2417</td>
+      <td align="right">0.7397</td>
+      <td align="right">0.8226</td>
+    </tr>
+    <tr>
+      <td>jp</td>
+      <td align="right">3123</td>
+      <td align="right">0.7678</td>
+      <td align="right">0.8265</td>
+    </tr>
+    <tr>
+      <td><strong>overall</strong></td>
+      <td align="right"><strong>14496</strong></td>
+      <td align="right">0.7497</td>
+      <td align="right"><strong>0.8206</strong></td>
+    </tr>
+  </tbody>
+</table>
 
 ## AIcrowd Reference
 
