@@ -6,10 +6,10 @@ import time
 
 import polars as pl
 
-pl.Config.set_fmt_str_lengths(1000)
+from ranking.base_ranker import BaseRanker
 
 
-class OkapiBM25:
+class OkapiBM25(BaseRanker):
     """BM25 scorer for full-corpus retrieval and candidate-set reranking."""
 
     def __init__(self, product_data: pl.DataFrame, text_column_name: str, id_column_name: str) -> None:
@@ -23,46 +23,15 @@ class OkapiBM25:
         Returns:
             None.
         """
-        self.total_number_of_docs = len(product_data)
-        self.text_column_name = text_column_name
-        self.id_column_name = id_column_name
-        self.id_column_dtype = product_data.schema[id_column_name]
-        self.text_column_dtype = product_data.schema[text_column_name]
+        super().__init__(product_data, text_column_name, id_column_name)
+
         self.k_1 = 1.2
         self.b = 0.75
-        self.token_pattern = r"\w+"
-        self.empty_result = pl.DataFrame(
-            schema={
-                self.id_column_name: self.id_column_dtype,
-                self.text_column_name: self.text_column_dtype,
-                "score": pl.Float64,
-            }
-        )
 
-        # Prepare product data
-        prepared_product_data = self._prepare_product_data(product_data)
-        self.product_data = prepared_product_data.lazy()
+        prepared_product_data = self.product_data.collect()
         self.avg_doc_len = prepared_product_data["document_length"].mean()
         self.idf_by_term = self._build_idf_lookup(prepared_product_data)
         self.oov_idf = self._calculate_idf(0)
-
-    def _prepare_product_data(self, product_data: pl.DataFrame) -> pl.DataFrame:
-        """Tokenize and normalize document text and add document length.
-
-        Args:
-            product_data: Input product table.
-
-        Returns:
-            pl.DataFrame: Product table with `document_keywords` and `document_length`.
-        """
-        product_data = product_data.with_columns(
-            pl.col(self.text_column_name)
-            .str.to_lowercase()
-            .str.extract_all(self.token_pattern)
-            .alias("document_keywords")
-        ).with_columns(pl.col("document_keywords").list.len().alias("document_length"))
-
-        return product_data
 
     def _calculate_idf(self, num_docs_with_keyword: int) -> float:
         """Compute BM25 IDF from the number of documents containing a term.
