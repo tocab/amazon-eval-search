@@ -8,6 +8,7 @@ import polars as pl
 from datasets import load_dataset
 
 from ranking.base_ranker import BaseRanker
+from ranking.e5_bi_encoder import E5BiEncoder
 from ranking.msmarco import MSMarcoRanker
 from ranking.okapi_bm25 import OkapiBM25
 from ranking.random_ranker import RandomRanker
@@ -30,6 +31,7 @@ class RankerType(str, Enum):
     OKAPI = "okapi"
     RANDOM = "random"
     MSMARCO = "msmarco"
+    E5 = "e5"
 
 
 def load_data(locales: list[str], split: str = "train") -> pl.DataFrame:
@@ -114,6 +116,8 @@ def _create_reranker(ranker_name: RankerType, product_data: pl.DataFrame) -> Bas
         return RandomRanker()
     if ranker_name == RankerType.MSMARCO:
         return MSMarcoRanker()
+    if ranker_name == RankerType.E5:
+        return E5BiEncoder()
     raise ValueError(f"Unknown ranker: {ranker_name}")
 
 
@@ -158,7 +162,7 @@ def main() -> None:
     Returns:
         None.
     """
-    ranker_to_test = RankerType.MSMARCO
+    ranker_to_test = RankerType.E5
     evaluate_rerank(ranker_to_test)
 
 
