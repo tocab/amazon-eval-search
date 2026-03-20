@@ -8,7 +8,8 @@ dependencies = [
     "datasets",
     "scikit-learn",
     "jupyterlab",
-    "pre-commit"
+    "pre-commit",
+    "sentence-transformers"
 ]
 license = "MIT"
 

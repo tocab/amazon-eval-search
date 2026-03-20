@@ -36,11 +36,12 @@ python evaluation.py
     <tr>
       <th rowspan="2" align="left">Storefront</th>
       <th rowspan="2" align="right">Queries</th>
-      <th colspan="2" align="center">Mean NDCG</th>
+      <th colspan="3" align="center">Mean NDCG</th>
     </tr>
     <tr>
       <th align="right">Random</th>
       <th align="right">Okapi BM25</th>
+      <th align="right">MSMARCO (vanilla)</th>
     </tr>
   </thead>
   <tbody>
@@ -49,24 +50,28 @@ python evaluation.py
       <td align="right">8956</td>
       <td align="right">0.7446</td>
       <td align="right">0.8182</td>
+      <td align="right"><strong>0.8361</strong></td>
     </tr>
     <tr>
       <td>es</td>
       <td align="right">2417</td>
       <td align="right">0.7397</td>
       <td align="right">0.8226</td>
+      <td align="right"><strong>0.8469</strong></td>
     </tr>
     <tr>
       <td>jp</td>
       <td align="right">3123</td>
       <td align="right">0.7678</td>
       <td align="right">0.8265</td>
+      <td align="right">0.8073</td>
     </tr>
     <tr>
       <td><strong>overall</strong></td>
       <td align="right"><strong>14496</strong></td>
       <td align="right">0.7497</td>
-      <td align="right"><strong>0.8206</strong></td>
+      <td align="right">0.8206</td>
+      <td align="right"><strong>0.8317</strong></td>
     </tr>
   </tbody>
 </table>

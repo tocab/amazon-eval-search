@@ -8,6 +8,7 @@ import polars as pl
 from datasets import load_dataset
 
 from ranking.base_ranker import BaseRanker
+from ranking.msmarco import MSMarcoRanker
 from ranking.okapi_bm25 import OkapiBM25
 from ranking.random_ranker import RandomRanker
 from sklearn.metrics import ndcg_score
@@ -28,6 +29,7 @@ class RankerType(str, Enum):
 
     OKAPI = "okapi"
     RANDOM = "random"
+    MSMARCO = "msmarco"
 
 
 def load_data(locales: list[str], split: str = "train") -> pl.DataFrame:
@@ -110,6 +112,8 @@ def _create_reranker(ranker_name: RankerType, product_data: pl.DataFrame) -> Bas
         return OkapiBM25(product_data, "product_title", "product_id")
     if ranker_name == RankerType.RANDOM:
         return RandomRanker()
+    if ranker_name == RankerType.MSMARCO:
+        return MSMarcoRanker()
     raise ValueError(f"Unknown ranker: {ranker_name}")
 
 
@@ -154,7 +158,7 @@ def main() -> None:
     Returns:
         None.
     """
-    ranker_to_test = RankerType.RANDOM
+    ranker_to_test = RankerType.MSMARCO
     evaluate_rerank(ranker_to_test)
 
 
