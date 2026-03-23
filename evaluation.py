@@ -1,5 +1,6 @@
 """Evaluation utilities for BM25 retrieval and reranking on ESCI data."""
 
+import logging
 from enum import Enum
 from typing import cast
 
@@ -23,6 +24,8 @@ ESCI_WEIGHTS = {
     "Complement": 0.01,
     "Irrelevant": 0.0,
 }
+
+logger = logging.getLogger(__name__)
 
 
 class RankerType(str, Enum):
@@ -135,6 +138,7 @@ def evaluate_rerank(ranker_type: RankerType = RankerType.OKAPI) -> pl.DataFrame:
 
     product_data = create_product_data(ds_train)
     ranker = _create_reranker(ranker_type, product_data)
+    ranker.fine_tune(ds_train)
 
     query_scores = []
     query_groups = ds_test.partition_by(["query_id", "query"], as_dict=True)
@@ -167,4 +171,8 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    )
     main()

@@ -78,3 +78,14 @@ class BaseRanker(ABC):
             pl.DataFrame: Candidate products ranked by BM25 score.
         """
         raise NotImplementedError
+
+    def fine_tune(
+        self,
+        data: pl.DataFrame,
+        validation_query_rate: float = 0.1,
+        epochs: int = 10,
+        batch_size: int = 8192,
+        num_negatives: int = 0,
+    ) -> None:
+        """Fine-tune the ranker with labeled training data."""
+        raise NotImplementedError
