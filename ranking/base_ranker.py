@@ -8,51 +8,26 @@ import polars as pl
 class BaseRanker(ABC):
     """BM25 scorer for full-corpus retrieval and candidate-set reranking."""
 
-    def __init__(self, product_data: pl.DataFrame, text_column_name: str, id_column_name: str) -> None:
+    def __init__(self, text_column_name: str, id_column_name: str) -> None:
         """Initialize BM25 state, tokenize documents, and precompute global IDF.
 
         Args:
-            product_data: Product table used as BM25 corpus.
             text_column_name: Text column used for tokenization and scoring.
             id_column_name: Unique product identifier column.
 
         Returns:
             None.
         """
-        self.total_number_of_docs = len(product_data)
         self.text_column_name = text_column_name
         self.id_column_name = id_column_name
-        self.id_column_dtype = product_data.schema[id_column_name]
-        self.text_column_dtype = product_data.schema[text_column_name]
         self.token_pattern = r"\w+"
-        # Prepare product data
-        prepared_product_data = self._prepare_product_data(product_data)
-        self.product_data = prepared_product_data.lazy()
         self.empty_result = pl.DataFrame(
             schema={
-                self.id_column_name: self.id_column_dtype,
-                self.text_column_name: self.text_column_dtype,
+                self.id_column_name: pl.Int32,
+                self.text_column_name: pl.String,
                 "score": pl.Float64,
             }
         )
-
-    def _prepare_product_data(self, product_data: pl.DataFrame) -> pl.DataFrame:
-        """Tokenize and normalize document text and add document length.
-
-        Args:
-            product_data: Input product table.
-
-        Returns:
-            pl.DataFrame: Product table with `document_keywords` and `document_length`.
-        """
-        product_data = product_data.with_columns(
-            pl.col(self.text_column_name)
-            .str.to_lowercase()
-            .str.extract_all(self.token_pattern)
-            .alias("document_keywords")
-        ).with_columns(pl.col("document_keywords").list.len().alias("document_length"))
-
-        return product_data
 
     @abstractmethod
     def query(self, query: str) -> pl.DataFrame:

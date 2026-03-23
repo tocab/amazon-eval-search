@@ -28,17 +28,14 @@ class E5BiEncoder(BaseRanker):
 
     def __init__(
         self,
-        product_data: pl.DataFrame | None = None,
+        model_path: str = "intfloat/multilingual-e5-small",
         text_column_name: str = "product_title",
         id_column_name: str = "product_id",
     ) -> None:
-        if product_data is None:
-            product_data = pl.DataFrame(schema={id_column_name: pl.String, text_column_name: pl.String})
-        self.token_pattern = r"\w+"
-        super().__init__(product_data, text_column_name, id_column_name)
+        super().__init__(text_column_name, id_column_name)
 
         # Load model
-        self.model = SentenceTransformer("intfloat/multilingual-e5-small")
+        self.model = SentenceTransformer(model_path)
 
     def _create_training_data(
         self,
@@ -184,14 +181,14 @@ class E5BiEncoder(BaseRanker):
 
     def rerank(self, query: str, data: pl.DataFrame) -> pl.DataFrame:  # noqa: D102
         # Encode query
-        query_vector = self.model.encode(f"query: {query}")
+        query_vector = self.model.encode(f"query: {query}", show_progress_bar=False)
 
         # Encode passages
         passages = []
         for text in data[self.text_column_name]:
             passages.append(f"passage: {text}")
 
-        passage_vectors = self.model.encode(passages)
+        passage_vectors = self.model.encode(passages, show_progress_bar=False)
 
         # cosine similarity for each passage vs query
         scores = passage_vectors @ query_vector

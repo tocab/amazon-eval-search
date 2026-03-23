@@ -23,7 +23,14 @@ class OkapiBM25(BaseRanker):
         Returns:
             None.
         """
-        super().__init__(product_data, text_column_name, id_column_name)
+        super().__init__(text_column_name, id_column_name)
+
+        self.total_number_of_docs = len(product_data)
+        self.id_column_dtype = product_data.schema[id_column_name]
+        self.text_column_dtype = product_data.schema[text_column_name]
+        # Prepare product data
+        prepared_product_data = self._prepare_product_data(product_data)
+        self.product_data = prepared_product_data.lazy()
 
         self.k_1 = 1.2
         self.b = 0.75
@@ -32,6 +39,24 @@ class OkapiBM25(BaseRanker):
         self.avg_doc_len = prepared_product_data["document_length"].mean()
         self.idf_by_term = self._build_idf_lookup(prepared_product_data)
         self.oov_idf = self._calculate_idf(0)
+
+    def _prepare_product_data(self, product_data: pl.DataFrame) -> pl.DataFrame:
+        """Tokenize and normalize document text and add document length.
+
+        Args:
+            product_data: Input product table.
+
+        Returns:
+            pl.DataFrame: Product table with `document_keywords` and `document_length`.
+        """
+        product_data = product_data.with_columns(
+            pl.col(self.text_column_name)
+            .str.to_lowercase()
+            .str.extract_all(self.token_pattern)
+            .alias("document_keywords")
+        ).with_columns(pl.col("document_keywords").list.len().alias("document_length"))
+
+        return product_data
 
     def _calculate_idf(self, num_docs_with_keyword: int) -> float:
         """Compute BM25 IDF from the number of documents containing a term.

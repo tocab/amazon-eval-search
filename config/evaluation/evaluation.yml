@@ -1,0 +1,5 @@
+model_name: e5 # msmarco | e5
+model_path: "ranking/artifacts/e5-bi-encoder/2026-03-22_17-24-32/final" # "intfloat/multilingual-e5-small" | any local path
+locales: ["us", "es", "jp"]
+text_column_name: "product_title"
+id_column_name: "product_id"
